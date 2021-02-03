@@ -100,6 +100,8 @@ public:
 
     void add_message_to_filter(uint32_t msg_id) { _message_filter.push_back(msg_id); }
 
+    bool allowed_by_dedup(const buffer* buf);
+
     struct buffer rx_buf;
     struct buffer tx_buf;
 

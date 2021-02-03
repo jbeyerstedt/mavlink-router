@@ -148,8 +148,17 @@ mainloop_test_SOURCES = \
 	src/common/log.h \
 	src/common/util.c \
 	src/common/util.h \
-	src/mavlink-router/endpoint.cpp \
+	src/common/xtermios.cpp \
+	src/common/xtermios.h \
+	src/mavlink-router/autolog.cpp \
+	src/mavlink-router/autolog.h \
+	src/mavlink-router/binlog.cpp \
+	src/mavlink-router/binlog.h \
+	src/mavlink-router/comm.h \
+	src/mavlink-router/dedup.h \
+	src/mavlink-router/dedup.cpp \
 	src/mavlink-router/endpoint.h \
+	src/mavlink-router/endpoint.cpp \
 	src/mavlink-router/mainloop_test.cpp \
 	src/mavlink-router/mainloop.cpp \
 	src/mavlink-router/pollable.cpp \
