@@ -494,6 +494,11 @@ bool Mainloop::add_endpoints(Mainloop &mainloop, struct options *opt)
     if (opt->report_msg_statistics)
         add_timeout(MSEC_PER_SEC, _print_statistics_timeout_cb, this);
 
+    // configure de-duplication
+    if (opt->dedup_period_ms > 0) {
+        _dedup.set_dedup_period(opt->dedup_period_ms);
+    }
+
     return true;
 }
 

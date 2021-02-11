@@ -53,6 +53,11 @@
 #       most verbose.
 #       Default:<info>
 #
+#   DeduplicationPeriod
+#       Time in milliseconds how long a message should be kept in the list of recent
+#       messages used for de-duplication.
+#       Default: 0 (de-duplication disabled)
+#
 # Section [UartEndpoint]: This section must have a name
 #
 # Keys:
