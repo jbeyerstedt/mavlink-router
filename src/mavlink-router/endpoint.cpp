@@ -357,10 +357,7 @@ bool Endpoint::accept_msg(int target_sysid, int target_compid, uint8_t src_sysid
 
 bool Endpoint::allowed_by_dedup(const buffer* buf)
 {
-    if (Mainloop::get_instance().add_check_dedup(buf)) {
-        return false;
-    }
-    return true;
+    return Mainloop::get_instance().add_check_dedup(buf);
 }
 
 bool Endpoint::_check_crc(const mavlink_msg_entry_t *msg_entry)
