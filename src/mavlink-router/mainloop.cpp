@@ -413,6 +413,14 @@ bool Mainloop::add_endpoints(Mainloop &mainloop, struct options *opt)
                 }
             }
 
+            if (conf->filterAllowSrcSysIn) {
+                char *token = strtok(conf->filterAllowSrcSysIn, ",");
+                while (token != NULL) {
+                    uart->add_to_allow_sysID_ingoing_filter(atoi(token));
+                    token = strtok(NULL, ",");
+                }
+            }
+
             g_endpoints[i] = uart.release();
             mainloop.add_fd(g_endpoints[i]->fd, g_endpoints[i], EPOLLIN);
             i++;
@@ -437,6 +445,14 @@ bool Mainloop::add_endpoints(Mainloop &mainloop, struct options *opt)
                 char *token = strtok(conf->filterAllowSrcCompOut, ",");
                 while (token != NULL) {
                     udp->add_to_allow_compID_outgoing_filter(atoi(token));
+                    token = strtok(NULL, ",");
+                }
+            }
+
+            if (conf->filterAllowSrcSysIn) {
+                char *token = strtok(conf->filterAllowSrcSysIn, ",");
+                while (token != NULL) {
+                    udp->add_to_allow_sysID_ingoing_filter(atoi(token));
                     token = strtok(NULL, ",");
                 }
             }
@@ -469,6 +485,14 @@ bool Mainloop::add_endpoints(Mainloop &mainloop, struct options *opt)
                 char *token = strtok(conf->filterAllowSrcCompOut, ",");
                 while (token != NULL) {
                     tcp->add_to_allow_compID_outgoing_filter(atoi(token));
+                    token = strtok(NULL, ",");
+                }
+            }
+
+            if (conf->filterAllowSrcSysIn) {
+                char *token = strtok(conf->filterAllowSrcSysIn, ",");
+                while (token != NULL) {
+                    tcp->add_to_allow_sysID_ingoing_filter(atoi(token));
                     token = strtok(NULL, ",");
                 }
             }

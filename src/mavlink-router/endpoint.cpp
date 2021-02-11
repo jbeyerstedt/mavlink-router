@@ -217,6 +217,16 @@ int Endpoint::read_msg(struct buffer *pbuf, int *target_sysid, int *target_compi
     _last_packet_len = expected_size;
     _stat.read.total++;
 
+    /* Apply ingoing message filtering */
+    if (*msg_id != UINT32_MAX && 
+        _allow_sysID_ingoing_filter.size() > 0 && 
+        std::find(_allow_sysID_ingoing_filter.begin(), _allow_sysID_ingoing_filter.end(), *src_sysid) == _allow_sysID_ingoing_filter.end()) {
+
+        // if incoming sysID filter is defined and message is not in the set then discard it
+        log_debug("%s [%d] filtered message %d from %u/%u", _name, fd, *msg_id, *src_sysid, *src_compid);
+        return 0;
+    }
+
     msg_entry = mavlink_get_msg_entry(*msg_id);
     if (msg_entry) {
         /*

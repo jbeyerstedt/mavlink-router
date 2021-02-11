@@ -80,6 +80,15 @@
 #       No default value. All component IDs will be accepted, when not
 #       specified.
 #
+#   FilterAllowSysIn
+#       Comma separated list of source system IDs from which messages
+#       should be accepted by to this endpoint. When specified, messages from
+#       all other system IDs will be discarded right after they were received.
+#       So this filter is applied before the message is routed to any of the
+#       endpoints.
+#       No default value. All system IDs will be accepted, when not
+#       specified.
+#
 #
 # Section [UdpEndpoint]: This section must have a name
 #
@@ -126,6 +135,15 @@
 #       No default value. All component IDs will be accepted, when not
 #       specified.
 #
+#   FilterAllowSysIn
+#       Comma separated list of source system IDs from which messages
+#       should be accepted by to this endpoint. When specified, messages from
+#       all other system IDs will be discarded right after they were received.
+#       So this filter is applied before the message is routed to any of the
+#       endpoints.
+#       No default value. All system IDs will be accepted, when not
+#       specified.
+#
 # Section [TcpEndpoint]: This section must have a name
 #
 # Keys:
@@ -153,6 +171,15 @@
 #       Comma separated list of source component IDs from which messages
 #       should be to transmitted to this endpoint
 #       No default value. All component IDs will be accepted, when not
+#       specified.
+#
+#   FilterAllowSysIn
+#       Comma separated list of source system IDs from which messages
+#       should be accepted by to this endpoint. When specified, messages from
+#       all other system IDs will be discarded right after they were received.
+#       So this filter is applied before the message is routed to any of the
+#       endpoints.
+#       No default value. All system IDs will be accepted, when not
 #       specified.
 #
 # Following, an example of configuration file:
