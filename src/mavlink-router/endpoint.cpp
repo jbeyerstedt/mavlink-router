@@ -80,6 +80,9 @@ int Endpoint::handle_read()
 
     while ((r = read_msg(&buf, &target_sysid, &target_compid, &src_sysid, &src_compid, &msg_id)) > 0) {
         if (allowed_by_dedup(&buf)) {
+            if (r == ReadOk) {
+                _add_sys_comp_id(((uint16_t)src_sysid << 8) | src_compid);
+            }
             Mainloop::get_instance().route_msg(&buf, target_sysid, target_compid, src_sysid,
                                                src_compid, msg_id);
         }
@@ -233,7 +236,6 @@ int Endpoint::read_msg(struct buffer *pbuf, int *target_sysid, int *target_compi
             _stat.read.crc_error_bytes += expected_size;
             return 0;
         }
-        _add_sys_comp_id(((uint16_t)*src_sysid << 8) | *src_compid);
     }
 
     _stat.read.handled++;
