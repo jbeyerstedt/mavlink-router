@@ -79,7 +79,7 @@ int Endpoint::handle_read()
     struct buffer buf{};
 
     while ((r = read_msg(&buf, &target_sysid, &target_compid, &src_sysid, &src_compid, &msg_id)) > 0) {
-        if (allowed_by_dedup(&buf)) {
+        if (r != CrcError && allowed_by_dedup(&buf)) {
             if (r == ReadOk) {
                 _add_sys_comp_id(((uint16_t)src_sysid << 8) | src_compid);
             }
@@ -234,7 +234,7 @@ int Endpoint::read_msg(struct buffer *pbuf, int *target_sysid, int *target_compi
         if (!_check_crc(msg_entry)) {
             _stat.read.crc_error++;
             _stat.read.crc_error_bytes += expected_size;
-            return 0;
+            return CrcError;
         }
     }
 
