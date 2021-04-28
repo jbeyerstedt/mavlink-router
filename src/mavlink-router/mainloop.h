@@ -129,6 +129,7 @@ struct endpoint_config {
         };
     };
     char *filter;
+    char *filterAllowSrcCompOut;
 };
 
 struct options {

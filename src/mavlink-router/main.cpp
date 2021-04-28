@@ -170,7 +170,7 @@ static int log_level_from_str(const char *str)
 }
 
 static int add_tcp_endpoint_address(const char *name, size_t name_len, const char *ip,
-                                    long unsigned port, int timeout)
+                                    long unsigned port, int timeout, const char *filter, const char *filterAllowSrcCompOut)
 {
     int ret;
 
@@ -202,6 +202,22 @@ static int add_tcp_endpoint_address(const char *name, size_t name_len, const cha
         goto fail;
     }
 
+    if (filter) {
+        conf->filter = strdup(filter);
+        if (!conf->filter) {
+            ret = -ENOMEM;
+            goto fail;
+        }
+    }
+
+    if (filterAllowSrcCompOut) {
+        conf->filterAllowSrcCompOut = strdup(filterAllowSrcCompOut);
+        if (!conf->filterAllowSrcCompOut) {
+            ret = -ENOMEM;
+            goto fail;
+        }
+    }
+
     if (port != ULONG_MAX) {
         conf->port = port;
     }
@@ -227,7 +243,7 @@ fail:
 }
 
 static int add_endpoint_address(const char *name, size_t name_len, const char *ip,
-                                long unsigned port, UdpEndpoint::UdpMode mode, const char *filter, const char *targetIp)
+                                long unsigned port, UdpEndpoint::UdpMode mode, const char *filter, const char *filterAllowSrcCompOut, const char *targetIp)
 {
     int ret;
 
@@ -276,6 +292,14 @@ static int add_endpoint_address(const char *name, size_t name_len, const char *i
     if (filter) {
         conf->filter = strdup(filter);
         if (!conf->filter) {
+            ret = -ENOMEM;
+            goto fail;
+        }
+    }
+
+    if (filterAllowSrcCompOut) {
+        conf->filterAllowSrcCompOut = strdup(filterAllowSrcCompOut);
+        if (!conf->filterAllowSrcCompOut) {
             ret = -ENOMEM;
             goto fail;
         }
@@ -349,7 +373,7 @@ error:
 }
 
 static int add_uart_endpoint(const char *name, size_t name_len, const char *uart_device,
-                             const char *bauds, bool flowcontrol)
+                             const char *bauds, bool flowcontrol, const char *filter, const char *filterAllowSrcCompOut)
 {
     int ret;
 
@@ -376,6 +400,22 @@ static int add_uart_endpoint(const char *name, size_t name_len, const char *uart
     if (!conf->bauds) {
         ret = -EINVAL;
         goto fail;
+    }
+
+    if (filter) {
+        conf->filter = strdup(filter);
+        if (!conf->filter) {
+            ret = -ENOMEM;
+            goto fail;
+        }
+    }
+
+    if (filterAllowSrcCompOut) {
+        conf->filterAllowSrcCompOut = strdup(filterAllowSrcCompOut);
+        if (!conf->filterAllowSrcCompOut) {
+            ret = -ENOMEM;
+            goto fail;
+        }
     }
 
     conf->flowcontrol = flowcontrol;
@@ -452,7 +492,7 @@ static int parse_argv(int argc, char *argv[])
                 return -EINVAL;
             }
 
-            add_endpoint_address(NULL, 0, ip, port, UdpEndpoint::UdpMode::Normal, NULL, NULL);
+            add_endpoint_address(NULL, 0, ip, port, UdpEndpoint::UdpMode::Normal, NULL, NULL, NULL);
             free(ip);
             break;
         }
@@ -507,7 +547,7 @@ static int parse_argv(int argc, char *argv[])
                 return -EINVAL;
             }
 
-            add_tcp_endpoint_address(NULL, 0, ip, port, DEFAULT_RETRY_TCP_TIMEOUT);
+            add_tcp_endpoint_address(NULL, 0, ip, port, DEFAULT_RETRY_TCP_TIMEOUT, NULL, NULL);
             free(ip);
             break;
         }
@@ -548,10 +588,10 @@ static int parse_argv(int argc, char *argv[])
                 return -EINVAL;
             }
 
-            add_endpoint_address(NULL, 0, base, number, UdpEndpoint::UdpMode::Eavesdropping, NULL, NULL);
+            add_endpoint_address(NULL, 0, base, number, UdpEndpoint::UdpMode::Eavesdropping, NULL, NULL, NULL);
         } else {
             const char *bauds = number != ULONG_MAX ? base + strlen(base) + 1 : NULL;
-            int ret = add_uart_endpoint(NULL, 0, base, bauds, false);
+            int ret = add_uart_endpoint(NULL, 0, base, bauds, false, NULL, NULL);
             if (ret < 0) {
                 free(base);
                 return ret;
@@ -725,11 +765,15 @@ static int parse_confs(ConfFile &conf)
         char *device;
         char *bauds;
         bool flowcontrol;
+        char *filter;
+        char *filterAllowSrcCompOut;
     };
     static const ConfFile::OptionsTable option_table_uart[] = {
-        {"baud",        false,  ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_uart, bauds)},
-        {"device",      true,   ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_uart, device)},
-        {"FlowControl", false,  ConfFile::parse_bool,       OPTIONS_TABLE_STRUCT_FIELD(option_uart, flowcontrol)},
+        {"baud",                    false,  ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_uart, bauds)},
+        {"device",                  true,   ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_uart, device)},
+        {"FlowControl",             false,  ConfFile::parse_bool,       OPTIONS_TABLE_STRUCT_FIELD(option_uart, flowcontrol)},
+        {"filter",                  false,  ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_uart, filter)},
+        {"filterAllowSrcCompOut",   false,  ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_uart, filterAllowSrcCompOut)},
     };
 
     struct option_udp {
@@ -738,24 +782,30 @@ static int parse_confs(ConfFile &conf)
         unsigned long port;
         char *filter;
         char *targetAddress;
+        char *filterAllowSrcCompOut;
     };
     static const ConfFile::OptionsTable option_table_udp[] = {
-        {"address",        true,   ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_udp, addr)},
-        {"mode",           true,   parse_mode,                 OPTIONS_TABLE_STRUCT_FIELD(option_udp, mode)},
-        {"port",           false,  ConfFile::parse_ul,         OPTIONS_TABLE_STRUCT_FIELD(option_udp, port)},
-        {"filter",         false,  ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_udp, filter)},
-        {"targetAddress",  false,  ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_udp, targetAddress)},
+        {"address",                 true,   ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_udp, addr)},
+        {"mode",                    true,   parse_mode,                 OPTIONS_TABLE_STRUCT_FIELD(option_udp, mode)},
+        {"port",                    false,  ConfFile::parse_ul,         OPTIONS_TABLE_STRUCT_FIELD(option_udp, port)},
+        {"filter",                  false,  ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_udp, filter)},
+        {"targetAddress",           false,  ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_udp, targetAddress)},
+        {"filterAllowSrcCompOut",   false,  ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_udp, filterAllowSrcCompOut)},
     };
 
     struct option_tcp {
         char *addr;
         unsigned long port;
         int timeout;
+        char *filter;
+        char *filterAllowSrcCompOut;
     };
     static const ConfFile::OptionsTable option_table_tcp[] = {
-        {"address",         true,   ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_tcp, addr)},
-        {"port",            true,   ConfFile::parse_ul,         OPTIONS_TABLE_STRUCT_FIELD(option_tcp, port)},
-        {"RetryTimeout",    false,  ConfFile::parse_i,          OPTIONS_TABLE_STRUCT_FIELD(option_tcp, timeout)},
+        {"address",                 true,   ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_tcp, addr)},
+        {"port",                    true,   ConfFile::parse_ul,         OPTIONS_TABLE_STRUCT_FIELD(option_tcp, port)},
+        {"RetryTimeout",            false,  ConfFile::parse_i,          OPTIONS_TABLE_STRUCT_FIELD(option_tcp, timeout)},
+        {"filter",                  false,  ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_tcp, filter)},
+        {"filterAllowSrcCompOut",   false,  ConfFile::parse_str_dup,    OPTIONS_TABLE_STRUCT_FIELD(option_tcp, filterAllowSrcCompOut)},
     };
 
     ret = conf.extract_options("General", option_table, ARRAY_SIZE(option_table), &opt);
@@ -771,7 +821,7 @@ static int parse_confs(ConfFile &conf)
                                    &opt_uart);
         if (ret == 0)
             ret = add_uart_endpoint(iter.name + offset, iter.name_len - offset, opt_uart.device,
-                                    opt_uart.bauds, opt_uart.flowcontrol);
+                                    opt_uart.bauds, opt_uart.flowcontrol, opt_uart.filter, opt_uart.filterAllowSrcCompOut);
         free(opt_uart.device);
         free(opt_uart.bauds);
         if (ret < 0)
@@ -800,7 +850,7 @@ static int parse_confs(ConfFile &conf)
                     ret = -EINVAL;
                 } else {
                     ret = add_endpoint_address(iter.name + offset, iter.name_len - offset, opt_udp.addr,
-                                               opt_udp.port, opt_udp.mode, opt_udp.filter, opt_udp.targetAddress);
+                                               opt_udp.port, opt_udp.mode, opt_udp.filter, opt_udp.filterAllowSrcCompOut, opt_udp.targetAddress);
                 }
             }
         }
@@ -823,7 +873,7 @@ static int parse_confs(ConfFile &conf)
                 ret = -EINVAL;
             } else {
                 ret = add_tcp_endpoint_address(iter.name + offset, iter.name_len - offset, opt_tcp.addr,
-                                               opt_tcp.port, opt_tcp.timeout);
+                                               opt_tcp.port, opt_tcp.timeout, opt_tcp.filter, opt_tcp.filterAllowSrcCompOut);
             }
         }
         free(opt_tcp.addr);
