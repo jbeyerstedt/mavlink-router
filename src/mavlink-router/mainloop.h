@@ -19,6 +19,7 @@
 
 #include "binlog.h"
 #include "comm.h"
+#include "dedup.h"
 #include "endpoint.h"
 #include "timeout.h"
 #include "ulog.h"
@@ -47,6 +48,8 @@ public:
 
     void free_endpoints(struct options *opt);
     bool add_endpoints(Mainloop &mainloop, struct options *opt);
+
+    bool add_check_dedup(const buffer* buf);
 
     void print_statistics();
 
@@ -85,6 +88,8 @@ private:
     LogEndpoint *_log_endpoint = nullptr;
 
     Timeout *_timeouts = nullptr;
+
+    Dedup _dedup{};
 
     struct {
         uint32_t msg_to_unknown = 0;
@@ -144,4 +149,5 @@ struct options {
     enum mavlink_dialect mavlink_dialect;
     unsigned long min_free_space;
     unsigned long max_log_files;
+    unsigned long dedup_period_ms;
 };

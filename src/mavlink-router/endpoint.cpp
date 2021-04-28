@@ -78,9 +78,15 @@ int Endpoint::handle_read()
     uint32_t msg_id;
     struct buffer buf{};
 
-    while ((r = read_msg(&buf, &target_sysid, &target_compid, &src_sysid, &src_compid, &msg_id)) > 0)
-        Mainloop::get_instance().route_msg(&buf, target_sysid, target_compid, src_sysid,
-                                           src_compid, msg_id, this);
+    while ((r = read_msg(&buf, &target_sysid, &target_compid, &src_sysid, &src_compid, &msg_id)) > 0) {
+        if (r != CrcError && allowed_by_dedup(&buf)) {
+            if (r == ReadOk) {
+                _add_sys_comp_id(((uint16_t)src_sysid << 8) | src_compid);
+            }
+            Mainloop::get_instance().route_msg(&buf, target_sysid, target_compid, src_sysid,
+                                               src_compid, msg_id);
+        }
+    }
 
     return r;
 }
@@ -228,9 +234,8 @@ int Endpoint::read_msg(struct buffer *pbuf, int *target_sysid, int *target_compi
         if (!_check_crc(msg_entry)) {
             _stat.read.crc_error++;
             _stat.read.crc_error_bytes += expected_size;
-            return 0;
+            return CrcError;
         }
-        _add_sys_comp_id(((uint16_t)*src_sysid << 8) | *src_compid);
     }
 
     _stat.read.handled++;
@@ -358,6 +363,11 @@ bool Endpoint::accept_msg(int target_sysid, int target_compid, uint8_t src_sysid
 
     // Reject everything else
     return false;
+}
+
+bool Endpoint::allowed_by_dedup(const buffer* buf)
+{
+    return Mainloop::get_instance().add_check_dedup(buf);
 }
 
 bool Endpoint::_check_crc(const mavlink_msg_entry_t *msg_entry)

@@ -380,6 +380,11 @@ static bool _print_statistics_timeout_cb(void *data)
     return true;
 }
 
+bool Mainloop::add_check_dedup(const buffer* buf)
+{
+    return _dedup.add_check_packet(buf->data, buf->len) == Dedup::PacketStatus::NEW_PACKET_OR_TIMED_OUT;
+}
+
 bool Mainloop::add_endpoints(Mainloop &mainloop, struct options *opt)
 {
     unsigned n_endpoints = 0, i = 0;
@@ -528,6 +533,11 @@ bool Mainloop::add_endpoints(Mainloop &mainloop, struct options *opt)
 
     if (opt->report_msg_statistics)
         add_timeout(MSEC_PER_SEC, _print_statistics_timeout_cb, this);
+
+    // configure de-duplication
+    if (opt->dedup_period_ms > 0) {
+        _dedup.set_dedup_period(opt->dedup_period_ms);
+    }
 
     return true;
 }
